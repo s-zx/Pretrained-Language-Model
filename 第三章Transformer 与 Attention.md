@@ -2,10 +2,10 @@
 
 ## 一、Transformer的结构
 机器翻译任务是一个序列到序列的任务，可以把模型看为一个黑盒，则输入一个句子，盒子会输出语义相同的不同语种的句子。
-![](%E6%88%AA%E5%B1%8F2021-12-19%2011.04.44.png)
+![](https://tva1.sinaimg.cn/large/008i3skNgy1gz9ewqgpewj313a0a6aan.jpg)
 Transformer模型与大多数Seq2Seq模型一样使用了Encoder-Decoder（编码器-解码器）结构。
 1）Encoder负责接收源端输入语句，提取特征并输出**语义特征向量**。
-2）Decoder负责根据语义特征向量，逐字生成译文。
+2)Decoder负责根据语义特征向量，逐字生成译文。
 
 > Transformer中**重复**的Encoder和Decoder是一个完整的且**参数不共享**的**特征提取层**
 > **串联的多层结构**让神经网络更深，模型的特征提取能力也更强
@@ -13,7 +13,7 @@ Transformer模型与大多数Seq2Seq模型一样使用了Encoder-Decoder（编�
 ### Encoder和Decoder的结构：
 1. Encoder
 内含两个子层，分别是Self-Attention层和Feed Forward层。如图：
-![](DraggedImage.png)
+![](https://tva1.sinaimg.cn/large/008i3skNgy1gz9ewukrd7j30g80cpmxn.jpg)
 Self-Attention层中的Multi-Head Attention层与LN（Layer Normalization)层通过**残差结构**连接。
 Feed Forward层中的全连接(Fully Connection)层与LN层通过残差结构连接。
 > LN层与BN层（Batch Normalization)同属于归一化层，虽然归一化维度不同，但目的都是解决训练过程中出现的梯度消失或梯度爆炸问题，达到加速训练和正则化的效果。
@@ -52,7 +52,7 @@ _概率向量的每个元素都表示一个概率值，即当前词在不同位�
 整个过程经历了语义信息提取与再生成，得到了更高层的特征向量。
 
 2. Self-Attention计算的矩阵形式
-![](DraggedImage.jpeg "矩阵形式")
+![](https://tva1.sinaimg.cn/large/008i3skNgy1gz9ewyhiibj31400u0tf9.jpg "矩阵形式")
 矩阵X表示输入的向量矩阵，每一行都代表一个词向量，由多个词向量组成的矩阵X表示一个句子。
 将矩阵X分别与三个权重矩阵右乘得到矩阵Q，K，V
 > 其中每一行表示一个词的q,k,v向量。
@@ -71,10 +71,10 @@ Self-Attention使用Multi-Head是为了提取**不同上下文语境下**的语�
 
 4. 拼接特征向量z
 由于数据流经过Self-Attention层是不改变维度的，所以需要将每个词的特征向量z0,z1,…,zn拼接成一个完整的向量，通过全连接层将拼接成的向量映射为新的语义特征向量z。
-![](DraggedImage-1.jpeg)
+![](https://tva1.sinaimg.cn/large/008i3skNgy1gz9ex1w8hsj31400u00yb.jpg)
 
 5. 完整的Self-Attention流程图
-![](DraggedImage-2.jpeg)
+![](https://tva1.sinaimg.cn/large/008i3skNgy1gz9ex5zoihj31400u0tf8.jpg)
 
 ### 代码分析
 接下来通过OpenNMT-tf（由哈佛大学自然语言处理研究组开源）项目的TensorFlow2代码，更深入地介绍Self-Attention的实现与计算技巧。
@@ -201,8 +201,9 @@ dot = tf.cast(tf.cast(dot, tf.float32) * mask + ((1.0 - mask) * tf.float32.min),
 ```python
 attn = tf.cast(tf.nn.softmax(tf.cast(dot, tf.float32)), dot.dtype)
 ```
-公式为![](DraggedImage-3.jpeg) attn(i,j)表示第i个词与其他所有位置的词的关联概率。
-将求得的概率矩阵与矩阵V相乘，即可得到每一个Single-Head Attention的输出矩阵Z，即![](DraggedImage-4.jpeg)
+公式为![](https://tva1.sinaimg.cn/large/008i3skNgy1gz9exbmdv6j31400u044w.jpg) attn(i,j)表示第i个词与其他所有位置的词的关联概率。
+将求得的概率矩阵与矩阵V相乘，即可得到每一个Single-Head Attention的输出矩阵Z，即![](https://tva1.sinaimg.cn/large/008i3skNgy1gz9exextz4j31400u00yb.jpg)
+
 > 在整个计算过程中，Multi-Head的V计算已经被融合在矩阵运算中，即同时进行8-head Attention的计算，这种处理方式能大大加快Self-Attention的计算速度
 ```python
 combined = combine_heads(heads)
@@ -219,15 +220,15 @@ _在作者看来，Self-Attention的核心思想就是将句子不同位置的�
 回忆Self-Attention的计算过程，_如果没有位置编码_，则在这两句话中，虽然相同的词对应的语义特征向量完全相同，但两句话意思完全不同，所以Transformer必须要有位置编码。
 > CNN中的卷积操作本身带有空间信息，RNN的文本输入顺序也包含了位置信息，所以他们都不需要额外的位置编码模块
 Self-Attention具有_无视距离_同时提取词语间关联信息的能力，故需要额外引入位置信息模块。
-论文《Attention is all you need》中提出了一种基于三角函数的位置编码算法，公式如下：![](DraggedImage-5.jpeg)
+论文《Attention is all you need》中提出了一种基于三角函数的位置编码算法，公式如下：![](https://tva1.sinaimg.cn/large/008i3skNgy1gz9exiob8bj31400u0jz3.jpg)
 > PE表示位置编码后得到的向量，pos表示词的词序，2i和2i+1分别表示词特征向量的偶数位置和奇数位置，dmodel表示特征向量的维数
 简而言之，特征向量的偶数位置用正弦函数计算，奇数位置用余弦函数计算。
-经过证明，使用三角函数的绝对编码是可以学习到相对位置的，证明如下：![](DraggedImage-6.jpeg)
+经过证明，使用三角函数的绝对编码是可以学习到相对位置的，证明如下：![](https://tva1.sinaimg.cn/large/008i3skNgy1gz9exlwol3j30u0140jy1.jpg)
 
 ## 四、单向掩码：另一种掩码机制
 前面在Self-Attention代码分析那里提到了Mask操作，其目的是消除由句子长度不一致而衍生的Padding字符对特征提取过程的噪声干扰。
 在实际训练过程中，Decoders接收的是多个完整的句子组成的、带有Padding字符的矩阵，而添加Mask矩阵的目的是：在输入全量的目标端译文时，利用Mask矩阵实现译文目标端的部分可见效果，保证逻辑推导的因果性。
-Mask矩阵的生成过程：![](DraggedImage-7.jpeg)
+Mask矩阵的生成过程：![](https://tva1.sinaimg.cn/large/008i3skNgy1gz9exq6r9fj30u014010h.jpg)
 
 ## 五、代码解读：模型训练技巧
 接下来介绍两个提升_模型训练速度_和_收敛稳定性_的训练技巧，不仅适用于Transformer，也可用在结构相似的模型上。
